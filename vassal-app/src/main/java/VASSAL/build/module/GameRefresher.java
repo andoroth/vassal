@@ -18,6 +18,7 @@
 package VASSAL.build.module;
 
 import VASSAL.build.AbstractConfigurable;
+import VASSAL.build.Buildable;
 import VASSAL.build.GameModule;
 import VASSAL.build.GpIdChecker;
 import VASSAL.build.GpIdSupport;
@@ -26,7 +27,9 @@ import VASSAL.build.module.documentation.HelpFile;
 import VASSAL.build.module.map.DrawPile;
 import VASSAL.build.module.map.SetupStack;
 import VASSAL.build.module.map.boardPicker.Board;
+import VASSAL.build.widget.PanelWidget;
 import VASSAL.build.widget.PieceSlot;
+import VASSAL.build.widget.TabWidget;
 import VASSAL.command.AddPiece;
 import VASSAL.command.AlertCommand;
 import VASSAL.command.Command;
@@ -185,12 +188,35 @@ public final class GameRefresher implements CommandEncoder, GameComponent {
     int notOwnedCount = 0;
     int notVisibleCount = 0;
 
+    //DPG
+    List<PieceSlot> piece_slots = null;
+    for ( final PieceWindow pw : theModule.getAllDescendantComponentsOf(PieceWindow.class)) {
+      if (Objects.equals(pw.getConfigureName(), "Everything")) {
+        TabWidget tab = (TabWidget) pw.getBuildables().get(0);
+        for (final Buildable b: tab.getBuildables()) {
+          PanelWidget widget = (PanelWidget) b;
+          if (Objects.equals(widget.getConfigureName(), "Terrain")) {
+            piece_slots = widget.getAllDescendantComponentsOf(PieceSlot.class);
+          }
+        }
+      }
+    }
+    ArrayList<String> gpid_list = new ArrayList<String>();
+    for (final PieceSlot slot : piece_slots){
+      gpid_list.add(slot.getName());
+    }
+
     // Process map by map
     for (final Map map : Map.getMapList()) {
 
       // Get the pieces on this map in visual order
       for (final GamePiece piece : map.getAllPieces()) {
 
+        String s = piece.getName();
+        if (gpid_list.contains(s)) {
+          refreshables.add(new PieceRefresher((GamePiece) piece, true));
+        }
+/*
         // A Deck. Pieces in a Deck can always be refreshed
         if (piece instanceof Deck) {
           final Deck deck = (Deck) piece;
@@ -249,7 +275,7 @@ public final class GameRefresher implements CommandEncoder, GameComponent {
             // Add as non-refreshable
             refreshables.add(new PieceRefresher(p, false));
           }
-        }
+        }*/
       }
 
       // If there are any loaded Mats, then find the Stacks of their cargo in the general Refeshables list,
@@ -328,6 +354,15 @@ public final class GameRefresher implements CommandEncoder, GameComponent {
      */
     final List<Refresher> refreshables = getRefreshables();
 
+    //DPG
+    GameState gs = theModule.getGameState();
+    gs.closeGame();
+    GameModule.getGameModule().setRefreshingSemaphore(false);
+    gs.updateDone();
+    gs.setup(false);
+    gs.setup(true);
+    gs.setupRefresh();
+    //GameModule.getGameModule().setRefreshingSemaphore(true);
     /*
      * And refresh them. Keep a list of the Decks in case we need to update their attributes
      */
@@ -1075,9 +1110,9 @@ public final class GameRefresher implements CommandEncoder, GameComponent {
         }
 
         // Remove the existing piece the Map and the GameState
-        final Command remove = new RemovePiece(piece);
-        remove.execute();
-        command = command.append(remove);
+        //final Command remove = new RemovePiece(piece);
+        //remove.execute();
+        //command = command.append(remove);
 
         // Refresh it
         if (!Boolean.TRUE.equals(piece.getProperty(Properties.INVISIBLE_TO_ME))

@@ -529,7 +529,7 @@ public class GameState implements CommandEncoder {
     g.resetSourcesAndListeners();
 
     if (gameStarting) {
-      g.getWizardSupport().showGameSetupWizard();
+      //g.getWizardSupport().showGameSetupWizard();
     }
 
     loadGameOld.setEnabled(gameStarting);
